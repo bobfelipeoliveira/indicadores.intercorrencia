@@ -6,9 +6,10 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import streamlit as st
+import pandas as pd
 import re
 from datetime import datetime
-from repository.data_repo import get_stats_overview, get_tickets, get_monitoramentos
+from repository.data_repo import get_stats_overview
 from utils.charts import kpi_html, section_header
 
 st.set_page_config(page_title="SGOI — Solar Cuidados", page_icon="☀️", layout="wide", initial_sidebar_state="expanded")
@@ -29,14 +30,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ─── LÓGICA DE PROCESSAMENTO DE TROCAS ────────────────────────────────────
-def processar_troca(texto):
-    # Regex simples para buscar: Nome - Data
-    # Ex: Sabrina - 28/06
-    padrao = r"([a-zA-ZÀ-ÿ\s]+)\s*-\s*(\d{2}/\d{2})"
-    matches = re.findall(padrao, texto)
-    return matches # Lista de tuplas (Nome, Data)
-
 # ─── SIDEBAR ───────────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("""<div class="solar-logo">☀️ <div class="solar-logo-text">Solar Cuidados</div></div>""", unsafe_allow_html=True)
@@ -44,9 +37,11 @@ with st.sidebar:
     if 'pagina' not in st.session_state: st.session_state['pagina'] = 'inicio'
 
     menu = [
-        ("🏠 Início", "inicio"), ("🔄 Trocas de Ponto", "trocas_ponto"),
-        (None, None), ("📊 Dashboard", "dashboard_exec"), ("👥 Pacientes", "pacientes"),
-        ("📞 Ligações", "ligacoes"), ("📄 Relatórios", "relatorios")
+        ("🏠 Início", "inicio"), 
+        ("📊 Escala de Plantão", "escala"),
+        ("🔄 Trocas de Ponto", "trocas_ponto"),
+        (None, None), ("📊 Dashboard", "dashboard_exec"), 
+        ("👥 Pacientes", "pacientes"), ("📞 Ligações", "ligacoes")
     ]
 
     for label, key in menu:
@@ -67,19 +62,23 @@ if pagina == 'inicio':
     for col, data in zip([c1,c2,c3,c4], [("Pacientes",stats.get('total_pacientes',0),"👥"), ("Tickets",stats.get('total_tickets',0),"🎫"), ("Abertos",stats.get('tickets_abertos',0),"🔓"), ("Ligações",stats.get('total_ligacoes',0),"📞")]):
         with col: st.markdown(kpi_html(data[0], data[1], "", "primary", data[2]), unsafe_allow_html=True)
 
+elif pagina == 'escala':
+    st.header("📅 Escala de Plantão — Julho/2026")
+    # Carregando a sua planilha (certifique-se de que o arquivo está na pasta correta)
+    try:
+        df = pd.read_csv("Colaboradores ativos Intercorrência (1).xlsx - Escala mensal julho.csv")
+        st.dataframe(df, use_container_width=True)
+    except Exception as e:
+        st.error("Erro ao carregar escala: " + str(e))
+
 elif pagina == 'trocas_ponto':
     st.header("🔄 Formalização de Troca")
-    st.info("Cole o formato: Nome - Data (Ex: Sabrina - 28/06)")
-    
-    input_troca = st.text_area("Cole a formalização aqui:")
+    input_troca = st.text_area("Cole a formalização recebida no grupo:")
     if st.button("Executar Troca"):
-        resultado = processar_troca(input_troca)
-        if resultado:
-            st.success(f"Troca processada para: {resultado}")
-            # AQUI VOCÊ ADICIONA A CHAMADA PARA O SEU BANCO DE DADOS
-            # Ex: update_escala_banco(resultado)
-        else:
-            st.error("Formato inválido. Use: Nome - Data")
+        # Lógica de processamento
+        st.info("Processando troca: " + input_troca)
+        # Aqui entra a chamada para atualizar o CSV
 
 elif pagina == 'dashboard_exec': from pages.dashboard_exec import render; render()
-# ... (restante das outras páginas)
+elif pagina == 'pacientes': from pages.other_pages import page_pacientes; page_pacientes()
+elif pagina == 'ligacoes': from pages.other_pages import page_ligacoes; page_ligacoes()
