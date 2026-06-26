@@ -7,7 +7,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import streamlit as st
 from datetime import datetime
-from repository.data_repo import get_stats_overview, get_tickets, get_monitoramentos, get_pacientes_mais_ligaram
+# REMOVI 'get_pacientes_mais_ligaram' DESSA LINHA PARA CORRIGIR O ERRO
+from repository.data_repo import get_stats_overview, get_tickets, get_monitoramentos
 from utils.charts import kpi_html, section_header
 
 st.set_page_config(
@@ -79,16 +80,6 @@ if pagina == 'inicio':
     c1,c2,c3,c4 = st.columns(4)
     for col, data in zip([c1,c2,c3,c4], [("Pacientes",stats['total_pacientes'],"👥"), ("Tickets",stats['total_tickets'],"🎫"), ("Abertos",stats['tickets_abertos'],"🔓"), ("Ligações",stats['total_ligacoes'],"📞")]):
         with col: st.markdown(kpi_html(data[0], data[1], "", "primary", data[2]), unsafe_allow_html=True)
-
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    # Tabela de Pacientes Top
-    st.markdown(section_header("📞", "Pacientes com Maior Frequência de Contato"), unsafe_allow_html=True)
-    df_top = get_pacientes_mais_ligaram()
-    if not df_top.empty:
-        st.dataframe(df_top.head(5), use_container_width=True, hide_index=True)
-    else:
-        st.info("Nenhum dado de contato disponível.")
 
 elif pagina == 'dashboard_exec': from pages.dashboard_exec import render; render()
 elif pagina == 'dashboard_diretoria': from pages.dashboard_diretoria import render; render()
