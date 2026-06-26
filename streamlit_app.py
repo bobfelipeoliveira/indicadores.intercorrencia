@@ -18,7 +18,7 @@ st.set_page_config(
 from database.db import init_db
 init_db()
 
-# CSS OTIMIZADO PARA CONTRASTE
+# CSS COM CONTRASTE AJUSTADO
 st.markdown("""
 <style>
     [data-testid="stSidebar"] {
@@ -28,26 +28,25 @@ st.markdown("""
     .solar-logo-text { font-size: 1.4rem; font-weight: 800; color: #ffffff; }
     .solar-logo-sub { font-size: 0.75rem; color: #f9a031; font-weight: bold; }
     
-    /* Ajuste dos botões da sidebar para leitura clara */
+    /* Botões da sidebar */
     div.stButton > button {
         border: none !important;
         border-radius: 6px !important;
         font-weight: 600 !important;
         transition: 0.3s;
+        text-align: left !important;
     }
-    /* Botão ativo (Laranja com texto escuro) */
+    /* Botão selecionado (Laranja com texto escuro) */
     div.stButton > button[data-testid="baseButton-primary"] {
         background-color: #f9a031 !important;
-        color: #333 !important;
+        color: #222 !important;
     }
-    /* Botão inativo (Roxo mais claro com texto branco) */
+    /* Botão não selecionado (Transparente com texto branco) */
     div.stButton > button[data-testid="baseButton-secondary"] {
-        background-color: rgba(255,255,255,0.1) !important;
+        background-color: transparent !important;
         color: #ffffff !important;
     }
-    div.stButton > button:hover { background-color: rgba(255,255,255,0.2) !important; }
-    
-    .stTextInput > div > div > input { background-color: rgba(255,255,255,0.9); }
+    div.stButton > button:hover { background-color: rgba(255,255,255,0.15) !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -57,7 +56,7 @@ with st.sidebar:
     <div class="solar-logo">
         <div style="font-size:2rem;">☀️</div>
         <div class="solar-logo-text">Solar Cuidados</div>
-        <div class="solar-logo-sub">Gestão Operacional</div>
+        <div class="solar-logo-sub">Gestão Operacional — Intercorrência</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -79,6 +78,16 @@ with st.sidebar:
         ("🔁 Call Back", "call_back"),
         ("📞 Ligações", "ligacoes"),
         ("👁️ Monitoramentos", "monitoramentos"),
+        ("⚠️ Pendências", "pendencias"),
+        ("🎯 SLA", "sla"),
+        (None, None),
+        ("📅 Timeline Paciente", "timeline"),
+        ("🔍 Central de Causas", "central_causas"),
+        ("🌡️ Mapa de Calor", "mapa_calor"),
+        (None, None),
+        ("📄 Relatórios", "relatorios"),
+        ("📤 Importação", "importacao"),
+        ("⚙️ Configurações", "configuracoes"),
     ]
 
     pagina_atual = st.session_state.get('pagina', 'inicio')
@@ -94,10 +103,23 @@ with st.sidebar:
 # ─── ROTEAMENTO ────────────────────────────────────────────────────────────
 pagina = st.session_state.get('pagina', 'inicio')
 
-# (Mantém a lógica de carregamento de páginas igual ao seu original)
+# (Aqui entra o seu roteamento original completo para carregar as páginas)
 if pagina == 'inicio':
-    st.title("Bem-vindo ao SGOI")
-    st.write("Selecione uma opção no menu lateral.")
-else:
-    # Lógica de roteamento das demais páginas...
-    pass
+    st.title("Início")
+elif pagina == 'dashboard_exec': from pages.dashboard_exec import render; render()
+elif pagina == 'dashboard_diretoria': from pages.dashboard_diretoria import render; render()
+elif pagina == 'indicadores_mensais': from pages.indicadores_mensais import render; render()
+elif pagina == 'indicadores_anuais': from pages.other_pages import page_indicadores_anuais; page_indicadores_anuais()
+elif pagina == 'pacientes': from pages.other_pages import page_pacientes; page_pacientes()
+elif pagina == 'tickets': from pages.tickets import render; render()
+elif pagina == 'call_back': from pages.other_pages import page_call_back; page_call_back()
+elif pagina == 'ligacoes': from pages.other_pages import page_ligacoes; page_ligacoes()
+elif pagina == 'monitoramentos': from pages.other_pages import page_monitoramentos; page_monitoramentos()
+elif pagina == 'pendencias': from pages.other_pages import page_pendencias; page_pendencias()
+elif pagina == 'sla': from pages.other_pages import page_sla; page_sla()
+elif pagina == 'timeline': from pages.other_pages import page_timeline; page_timeline()
+elif pagina == 'central_causas': from pages.other_pages import page_central_causas; page_central_causas()
+elif pagina == 'mapa_calor': from pages.other_pages import page_mapa_calor; page_mapa_calor()
+elif pagina == 'relatorios': from pages.other_pages import page_relatorios; page_relatorios()
+elif pagina == 'importacao': from pages.other_pages import page_importacao; page_importacao()
+elif pagina == 'configuracoes': from pages.other_pages import page_configuracoes; page_configuracoes()
