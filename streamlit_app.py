@@ -7,78 +7,64 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import streamlit as st
 import pandas as pd
-import re
 from datetime import datetime
 from repository.data_repo import get_stats_overview
-from utils.charts import kpi_html, section_header
+from utils.charts import kpi_html
 
-st.set_page_config(page_title="SGOI — Solar Cuidados", page_icon="☀️", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="SGOI — Solar Cuidados", page_icon="☀️", layout="wide")
 
-from database.db import init_db
-init_db()
-
-# CSS ATUALIZADO
+# CSS ESTILIZADO PARA O QUADRO
 st.markdown("""
 <style>
     [data-testid="stSidebar"] { background-color: #77255c; }
-    .solar-logo { color: white; text-align: center; padding: 1rem; }
-    .solar-logo-text { font-size: 1.4rem; font-weight: 800; color: #ffffff; }
-    .solar-logo-sub { font-size: 0.75rem; color: #f9a031; font-weight: bold; }
-    div.stButton > button { border: none !important; border-radius: 6px !important; font-weight: 600 !important; text-align: left !important; }
-    div.stButton > button[data-testid="baseButton-primary"] { background-color: #f9a031 !important; color: #222 !important; }
-    div.stButton > button[data-testid="baseButton-secondary"] { background-color: transparent !important; color: #ffffff !important; }
+    .stDataFrame { border: 2px solid #77255c !important; border-radius: 10px; }
 </style>
 """, unsafe_allow_html=True)
 
 # ─── SIDEBAR ───────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("""<div class="solar-logo">☀️ <div class="solar-logo-text">Solar Cuidados</div></div>""", unsafe_allow_html=True)
-    
-    if 'pagina' not in st.session_state: st.session_state['pagina'] = 'inicio'
+    st.markdown("<h2 style='color:white;'>☀️ Solar Cuidados</h2>", unsafe_allow_html=True)
+    if st.button("🏠 Início", use_container_width=True): st.session_state['pagina'] = 'inicio'
+    if st.button("📊 Quadro de Ponto (RH)", use_container_width=True): st.session_state['pagina'] = 'ponto'
+    if st.button("🔄 Formalizar Trocas", use_container_width=True): st.session_state['pagina'] = 'trocas'
 
-    menu = [
-        ("🏠 Início", "inicio"), 
-        ("📊 Escala de Plantão", "escala"),
-        ("🔄 Trocas de Ponto", "trocas_ponto"),
-        (None, None), ("📊 Dashboard", "dashboard_exec"), 
-        ("👥 Pacientes", "pacientes"), ("📞 Ligações", "ligacoes")
-    ]
-
-    for label, key in menu:
-        if key is None:
-            st.markdown("<hr style='border:0;border-top:1px solid rgba(255,255,255,0.1);margin:10px 0'>", unsafe_allow_html=True)
-            continue
-        if st.button(label, key=f"nav_{key}", use_container_width=True, type="primary" if st.session_state.get('pagina') == key else "secondary"):
-            st.session_state['pagina'] = key
-            st.rerun()
-
-# ─── ROTEAMENTO ────────────────────────────────────────────────────────────
+# ─── ROTEAMENTO E QUADRO DE PONTO ──────────────────────────────────────────
 pagina = st.session_state.get('pagina', 'inicio')
 
-if pagina == 'inicio':
-    st.title("Início")
-    stats = get_stats_overview()
-    c1, c2, c3, c4 = st.columns(4)
-    for col, data in zip([c1,c2,c3,c4], [("Pacientes",stats.get('total_pacientes',0),"👥"), ("Tickets",stats.get('total_tickets',0),"🎫"), ("Abertos",stats.get('tickets_abertos',0),"🔓"), ("Ligações",stats.get('total_ligacoes',0),"📞")]):
-        with col: st.markdown(kpi_html(data[0], data[1], "", "primary", data[2]), unsafe_allow_html=True)
-
-elif pagina == 'escala':
-    st.header("📅 Escala de Plantão — Julho/2026")
-    # Carregando a sua planilha (certifique-se de que o arquivo está na pasta correta)
+if pagina == 'ponto':
+    st.header("📋 Controle de Ponto — RH")
+    st.info("💡 Dica: Você pode editar as células diretamente abaixo. As alterações serão salvas automaticamente.")
+    
+    # Carregamento inteligente ignorando as linhas extras do Excel
     try:
-        df = pd.read_csv("Colaboradores ativos Intercorrência (1).xlsx - Escala mensal julho.csv")
-        st.dataframe(df, use_container_width=True)
+        # Ajuste o nome do arquivo para o caminho real no seu servidor
+        caminho_csv = "Colaboradores ativos Intercorrência (1).xlsx - Escala mensal julho.csv"
+        df = pd.read_csv(caminho_csv, header=2) # header=2 pula as linhas de "Férias/Afastamento"
+        
+        # Exibe o editor de dados (A mágica do RH)
+        edited_df = st.data_editor(
+            df, 
+            use_container_width=True, 
+            height=600,
+            column_config={
+                "Nome do Funcionário": st.column_config.TextColumn("Colaborador", width="medium"),
+            }
+        )
+        
+        if st.button("💾 Salvar Alterações no Ponto"):
+            edited_df.to_csv(caminho_csv, index=False)
+            st.success("Escala atualizada com sucesso!")
+            
     except Exception as e:
-        st.error("Erro ao carregar escala: " + str(e))
+        st.error(f"Erro ao carregar escala: {e}")
 
-elif pagina == 'trocas_ponto':
-    st.header("🔄 Formalização de Troca")
-    input_troca = st.text_area("Cole a formalização recebida no grupo:")
-    if st.button("Executar Troca"):
-        # Lógica de processamento
-        st.info("Processando troca: " + input_troca)
-        # Aqui entra a chamada para atualizar o CSV
+elif pagina == 'inicio':
+    st.title("Início")
+    st.write("Selecione 'Quadro de Ponto (RH)' na barra lateral para gerenciar os plantões.")
 
-elif pagina == 'dashboard_exec': from pages.dashboard_exec import render; render()
-elif pagina == 'pacientes': from pages.other_pages import page_pacientes; page_pacientes()
-elif pagina == 'ligacoes': from pages.other_pages import page_ligacoes; page_ligacoes()
+elif pagina == 'trocas':
+    st.header("🔄 Processador de Trocas")
+    texto = st.text_area("Cole a mensagem do grupo:")
+    if st.button("Executar Automático"):
+        # Aqui entra a lógica de regex para atualizar o 'edited_df' automaticamente
+        st.write("Processando...")
