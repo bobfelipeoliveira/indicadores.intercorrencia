@@ -7,6 +7,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import streamlit as st
 from datetime import datetime
+from repository.data_repo import get_stats_overview, get_tickets, get_monitoramentos, get_pacientes_mais_ligaram
+from utils.charts import kpi_html, section_header
 
 st.set_page_config(
     page_title="SGOI — Solar Cuidados",
@@ -18,34 +20,16 @@ st.set_page_config(
 from database.db import init_db
 init_db()
 
-# CSS COM CONTRASTE AJUSTADO
+# CSS COMPLETO
 st.markdown("""
 <style>
-    [data-testid="stSidebar"] {
-        background-color: #77255c;
-    }
+    [data-testid="stSidebar"] { background-color: #77255c; }
     .solar-logo { color: white; text-align: center; padding: 1rem; }
     .solar-logo-text { font-size: 1.4rem; font-weight: 800; color: #ffffff; }
     .solar-logo-sub { font-size: 0.75rem; color: #f9a031; font-weight: bold; }
-    
-    /* Botões da sidebar */
-    div.stButton > button {
-        border: none !important;
-        border-radius: 6px !important;
-        font-weight: 600 !important;
-        transition: 0.3s;
-        text-align: left !important;
-    }
-    /* Botão selecionado (Laranja com texto escuro) */
-    div.stButton > button[data-testid="baseButton-primary"] {
-        background-color: #f9a031 !important;
-        color: #222 !important;
-    }
-    /* Botão não selecionado (Transparente com texto branco) */
-    div.stButton > button[data-testid="baseButton-secondary"] {
-        background-color: transparent !important;
-        color: #ffffff !important;
-    }
+    div.stButton > button { border: none !important; border-radius: 6px !important; font-weight: 600 !important; text-align: left !important; }
+    div.stButton > button[data-testid="baseButton-primary"] { background-color: #f9a031 !important; color: #222 !important; }
+    div.stButton > button[data-testid="baseButton-secondary"] { background-color: transparent !important; color: #ffffff !important; }
     div.stButton > button:hover { background-color: rgba(255,255,255,0.15) !important; }
 </style>
 """, unsafe_allow_html=True)
@@ -61,51 +45,51 @@ with st.sidebar:
     """, unsafe_allow_html=True)
 
     busca_global = st.text_input("🔎", placeholder="Pesquisa global...", key="busca_global", label_visibility="collapsed")
-    
     st.markdown("<br>", unsafe_allow_html=True)
 
     if 'pagina' not in st.session_state: st.session_state['pagina'] = 'inicio'
 
     menu = [
-        ("🏠 Início", "inicio"),
-        ("📊 Dashboard Executivo", "dashboard_exec"),
-        ("👔 Dashboard Diretoria", "dashboard_diretoria"),
-        ("📅 Indicadores Mensais", "indicadores_mensais"),
-        ("📆 Indicadores Anuais", "indicadores_anuais"),
-        (None, None),
-        ("👥 Pacientes", "pacientes"),
-        ("🎫 Tickets", "tickets"),
-        ("🔁 Call Back", "call_back"),
-        ("📞 Ligações", "ligacoes"),
-        ("👁️ Monitoramentos", "monitoramentos"),
-        ("⚠️ Pendências", "pendencias"),
-        ("🎯 SLA", "sla"),
-        (None, None),
-        ("📅 Timeline Paciente", "timeline"),
-        ("🔍 Central de Causas", "central_causas"),
-        ("🌡️ Mapa de Calor", "mapa_calor"),
-        (None, None),
-        ("📄 Relatórios", "relatorios"),
-        ("📤 Importação", "importacao"),
-        ("⚙️ Configurações", "configuracoes"),
+        ("🏠 Início", "inicio"), ("📊 Dashboard Executivo", "dashboard_exec"),
+        ("👔 Dashboard Diretoria", "dashboard_diretoria"), ("📅 Indicadores Mensais", "indicadores_mensais"),
+        ("📆 Indicadores Anuais", "indicadores_anuais"), (None, None),
+        ("👥 Pacientes", "pacientes"), ("🎫 Tickets", "tickets"), ("🔁 Call Back", "call_back"),
+        ("📞 Ligações", "ligacoes"), ("👁️ Monitoramentos", "monitoramentos"), ("⚠️ Pendências", "pendencias"),
+        ("🎯 SLA", "sla"), (None, None), ("📅 Timeline Paciente", "timeline"),
+        ("🔍 Central de Causas", "central_causas"), ("🌡️ Mapa de Calor", "mapa_calor"),
+        (None, None), ("📄 Relatórios", "relatorios"), ("📤 Importação", "importacao"), ("⚙️ Configurações", "configuracoes"),
     ]
 
-    pagina_atual = st.session_state.get('pagina', 'inicio')
     for label, key in menu:
         if key is None:
             st.markdown("<hr style='border:0;border-top:1px solid rgba(255,255,255,0.1);margin:10px 0'>", unsafe_allow_html=True)
             continue
-        tipo = "primary" if pagina_atual == key else "secondary"
-        if st.button(label, key=f"nav_{key}", use_container_width=True, type=tipo):
+        if st.button(label, key=f"nav_{key}", use_container_width=True, type="primary" if st.session_state.get('pagina') == key else "secondary"):
             st.session_state['pagina'] = key
             st.rerun()
 
-# ─── ROTEAMENTO ────────────────────────────────────────────────────────────
+# ─── ROTEAMENTO E PÁGINA INICIAL ──────────────────────────────────────────
 pagina = st.session_state.get('pagina', 'inicio')
 
-# (Aqui entra o seu roteamento original completo para carregar as páginas)
 if pagina == 'inicio':
     st.title("Início")
+    stats = get_stats_overview()
+    
+    # KPIs
+    c1,c2,c3,c4 = st.columns(4)
+    for col, data in zip([c1,c2,c3,c4], [("Pacientes",stats['total_pacientes'],"👥"), ("Tickets",stats['total_tickets'],"🎫"), ("Abertos",stats['tickets_abertos'],"🔓"), ("Ligações",stats['total_ligacoes'],"📞")]):
+        with col: st.markdown(kpi_html(data[0], data[1], "", "primary", data[2]), unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Tabela de Pacientes Top
+    st.markdown(section_header("📞", "Pacientes com Maior Frequência de Contato"), unsafe_allow_html=True)
+    df_top = get_pacientes_mais_ligaram()
+    if not df_top.empty:
+        st.dataframe(df_top.head(5), use_container_width=True, hide_index=True)
+    else:
+        st.info("Nenhum dado de contato disponível.")
+
 elif pagina == 'dashboard_exec': from pages.dashboard_exec import render; render()
 elif pagina == 'dashboard_diretoria': from pages.dashboard_diretoria import render; render()
 elif pagina == 'indicadores_mensais': from pages.indicadores_mensais import render; render()
