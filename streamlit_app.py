@@ -7,7 +7,6 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import streamlit as st
 from datetime import datetime
-# REMOVI 'get_pacientes_mais_ligaram' DESSA LINHA PARA CORRIGIR O ERRO
 from repository.data_repo import get_stats_overview, get_tickets, get_monitoramentos
 from utils.charts import kpi_html, section_header
 
@@ -76,10 +75,19 @@ if pagina == 'inicio':
     st.title("Início")
     stats = get_stats_overview()
     
-    # KPIs
-    c1,c2,c3,c4 = st.columns(4)
-    for col, data in zip([c1,c2,c3,c4], [("Pacientes",stats['total_pacientes'],"👥"), ("Tickets",stats['total_tickets'],"🎫"), ("Abertos",stats['tickets_abertos'],"🔓"), ("Ligações",stats['total_ligacoes'],"📞")]):
-        with col: st.markdown(kpi_html(data[0], data[1], "", "primary", data[2]), unsafe_allow_html=True)
+    # KPIs - Adicionando "Transferidas"
+    c1, c2, c3, c4, c5 = st.columns(5)
+    kpi_data = [
+        ("Pacientes", stats.get('total_pacientes', 0), "👥"),
+        ("Tickets", stats.get('total_tickets', 0), "🎫"),
+        ("Abertos", stats.get('tickets_abertos', 0), "🔓"),
+        ("Ligações", stats.get('total_ligacoes', 0), "📞"),
+        ("Transferidas", stats.get('ligacoes_transferidas', 0), "➡️")
+    ]
+    
+    for col, data in zip([c1, c2, c3, c4, c5], kpi_data):
+        with col: 
+            st.markdown(kpi_html(data[0], data[1], "", "primary", data[2]), unsafe_allow_html=True)
 
 elif pagina == 'dashboard_exec': from pages.dashboard_exec import render; render()
 elif pagina == 'dashboard_diretoria': from pages.dashboard_diretoria import render; render()
